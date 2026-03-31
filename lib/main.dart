@@ -1,55 +1,135 @@
 import 'package:flutter/material.dart';
-
+//import 'task_repository.dart'
 void main() {
   runApp(MyApp());
 }
 
-class MyApp extends StatelessWidget {
-  List<Task> tasks = [
-    Task(title: "Zadanie z metodologii", deadline: "sroda za tydzien", done: false, priority: "sredni"),
-    Task(title: "Napisac sprawozdanie", deadline: "do konca miesiaca", done: false, priority: "niski"),
-    Task(title: "Nadrobic fluttera", deadline: "do wtorku", done: true, priority: "sredni"),
-    Task(title: "Projekt strony internetowej", deadline: "do konca miesiaca", done: false, priority: "wysoki"),
+class TaskRepository {
+  static List<Task> tasks = [
+    Task(title: "Zadanie z metodologii",
+        deadline: "sroda za tydzien",
+        done: false,
+        priority: "sredni"),
+    Task(title: "Napisac sprawozdanie",
+        deadline: "do konca miesiaca",
+        done: false,
+        priority: "niski"),
+    Task(title: "Nadrobic fluttera",
+        deadline: "do wtorku",
+        done: true,
+        priority: "sredni"),
+    Task(title: "Projekt strony internetowej",
+        deadline: "do konca miesiaca",
+        done: false,
+        priority: "wysoki"),
   ];
+}
 
+
+class MyApp extends StatelessWidget{
   @override
   Widget build(BuildContext context) {
-    int completedTasks = tasks.where((task) => task.done).length;
+    //int completedTasks = (TaskRepository.tasks).where((task) => task.done).length;
 
     return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(title: Center(child: Text('KrakFlow'))),
-        body: Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("Masz dziś ${tasks.length - completedTasks} zadania, wykonano już $completedTasks."),
-              SizedBox(height: 16),
-              Text(
-                "Dzisiejsze zadania",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+      home: DynamicznyMyApp(),
+    );
+  }
+}
+
+class AddTaskScreen extends StatelessWidget{
+  AddTaskScreen({super.key});
+
+  final TextEditingController titleController = TextEditingController();
+  final TextEditingController deadlineController = TextEditingController();
+  @override
+  Widget build(BuildContext context){
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Nowe zadanie"),
+      ),
+      body: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: titleController,
+              decoration: InputDecoration(
+                labelText: "Tytuł zadania",
+                border: OutlineInputBorder(),
               ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: tasks.length,
-                  itemBuilder: (context, index) {
-                    return TaskCard(
-                      title: tasks[index].title,
-                      subtitle: '${tasks[index].deadline} | Priorytet: ${tasks[index].priority}',
-                      isDone: tasks[index].done,
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
+            ),
+            Text("Tutaj bedzie formularz dodawania taska"),
+            ElevatedButton(
+              onPressed: () {
+                child: Text("Zapisz"),
+            )
+          ]
+        )
       ),
     );
   }
 }
 
+class DynamicznyMyApp extends StatefulWidget{
+  const DynamicznyMyApp({super.key});
+
+  @override
+  State<StatefulWidget> createState(){
+    return StanDynamicznegoWidgetu();
+  }
+}
+
+class StanDynamicznegoWidgetu extends State<DynamicznyMyApp>{
+  @override
+  Widget build(BuildContext context){
+  return Scaffold(
+    appBar: AppBar(
+        title: Center(child: Text('KrakFlow'))),
+    body: Padding(
+      padding: EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("Masz dziś ${TaskRepository.tasks.length} zadania"),
+
+          //wykonano już $completedTasks."),
+          SizedBox(height: 16),
+          Text(
+            "Dzisiejsze zadania",
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: TaskRepository.tasks.length,
+              itemBuilder: (context, index) {
+                return TaskCard(
+                  title: TaskRepository.tasks[index].title,
+                  subtitle: '${TaskRepository.tasks[index].deadline} | Priorytet: ${TaskRepository.tasks[index].priority}',
+                  isDone: TaskRepository.tasks[index].done,
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    ),
+    floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AddTaskScreen(),
+            ),
+          );
+        },
+        child: Icon(Icons.add)
+    ),
+  );
+
+  }
+}
 class Task {
   final String title;
   final String deadline;
