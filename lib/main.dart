@@ -1,37 +1,92 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
-//import 'task_repository.dart'
 void main() {
   runApp(MyApp());
 }
+class TaskApiService{
+  static const String baseUrl = "https://dummyjson.com";
+  static Future<List<Task>> fetchTasks() async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/todos"),
+    );
 
-class TaskRepository {
-  static List<Task> tasks = [
-    Task(
-      title: "Zadanie z metodologii",
-      deadline: "sroda za tydzien",
-      done: false,
-      priority: "sredni",
-    ),
-    Task(
-      title: "Napisac sprawozdanie",
-      deadline: "do konca miesiaca",
-      done: false,
-      priority: "niski",
-    ),
-    Task(
-      title: "Nadrobic fluttera",
-      deadline: "do wtorku",
-      done: true,
-      priority: "sredni",
-    ),
-    Task(
-      title: "Projekt strony internetowej",
-      deadline: "do konca miesiaca",
-      done: false,
-      priority: "wysoki",
-    ),
-  ];
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final List todos = data["todos"];
+
+      return todos.map((todo) {
+        return Task(
+          title: todo["todo"],
+            deadline: "brak",
+            done: todo["completed"],
+            priority: "sredni",
+        );
+    }).toList();
+    } else {
+      throw Exception("Blad pobrania danych");
+    }
+  }
+}
+class TaskRepository extends StatelessWidget {
+  const TaskRepository({super.key});
+
+  static List<Task> tasks = [];
+
+  @override
+  Widget build(BuildContext context){
+    return FutureBuilder<List<Task>>(
+      future: TaskApiService.fetchTasks(),
+      builder: (context, snapshot) {
+        if(snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(
+              child: Text("Błąd: ${snapshot.error}"),
+          );
+        }
+          final tasks = snapshot.data!;
+
+          return ListView(
+            children: tasks.map((task) {
+              return Text(task.title);
+            }).toList(),
+          );
+      },
+    );
+  }
+
+
+
+  // static List<Task> tasks = [
+  //   Task(
+  //     title: "Zadanie z metodologii",
+  //     deadline: "sroda za tydzien",
+  //     done: false,
+  //     priority: "sredni",
+  //   ),
+  //   Task(
+  //     title: "Napisac sprawozdanie",
+  //     deadline: "do konca miesiaca",
+  //     done: false,
+  //     priority: "niski",
+  //   ),
+  //   Task(
+  //     title: "Nadrobic fluttera",
+  //     deadline: "do wtorku",
+  //     done: true,
+  //     priority: "sredni",
+  //   ),
+  //   Task(
+  //     title: "Projekt strony internetowej",
+  //     deadline: "do konca miesiaca",
+  //     done: false,
+  //     priority: "wysoki",
+  //   ),
+  // ];
+
 }
 
 class MyApp extends StatelessWidget {
@@ -115,9 +170,55 @@ class DynamicznyMyApp extends StatefulWidget {
 
 class StanDynamicznegoWidgetu extends State<DynamicznyMyApp> {
   String selectedFilter = "wszystkie";
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    TaskApiService.fetchTasks().then((pobraneZadania) {
+      setState(() {
+        TaskRepository.tasks = pobraneZadania;
+        _isLoading = false;
+        _errorMessage = null;
+      });
+    }).catchError((error) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = error.toString();
+      });
+      print("Blad pobierania: $error");
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    //Waiting (z.3)
+    if (_isLoading){
+      return Scaffold(
+        appBar: AppBar(title: Center(child: Text('KrakFlow'))),
+        body: Center(child: CircularProgressIndicator()),
+      );
+  }
+
+    //Error (z.3)
+    if(_errorMessage != null){
+      return Scaffold(
+        appBar: AppBar(title: Center(child: Text('KrakFlow'))),
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                "Blad pobierania danych:\n$_errorMessage",
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.red, fontSize: 16),
+              ),
+            ),
+          ),
+      );
+    }
+
+    //Data (z.3)
     int tasksToDo = TaskRepository.tasks.where((task) => !task.done).length;
     List<Task> filteredTasks = TaskRepository.tasks;
 
